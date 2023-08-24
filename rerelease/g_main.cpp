@@ -137,6 +137,9 @@ cvar_t *ai_model_scale;
 cvar_t *ai_allow_dm_spawn;
 cvar_t *ai_movement_disabled;
 
+// adnan
+cvar_t* g_possession;
+
 static cvar_t *g_frames_per_frame;
 
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);
@@ -351,6 +354,10 @@ void InitGame()
 	g_map_list = gi.cvar("g_map_list", "", CVAR_NOFLAGS);
 	g_map_list_shuffle = gi.cvar("g_map_list_shuffle", "0", CVAR_NOFLAGS);
 	g_lag_compensation = gi.cvar("g_lag_compensation", "1", CVAR_NOFLAGS);
+
+	// adnan
+	gi.Com_Print("==== Initializing POSSESSION ====\n");
+	g_possession = gi.cvar("g_possession", "0", CVAR_NOFLAGS);
 
 	// items
 	InitItems();

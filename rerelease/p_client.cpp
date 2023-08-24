@@ -1941,6 +1941,59 @@ inline void PutClientOnSpawnPoint(edict_t *ent, const vec3_t &spawn_origin, cons
 	AngleVectors(client->v_angle, client->v_forward, nullptr, nullptr);
 }
 
+
+static int sound_pain;
+static int sound_pain2;
+static int sound_death;
+static int sound_idle;
+static int sound_open;
+static int sound_search;
+static int sound_sight;
+
+extern cvar_t* g_possession;
+
+PAIN(p_gunner_pain) (edict_t* self, edict_t* other, float kick, int damage, const mod_t& mod) -> void
+{
+	if (g_possession->integer <= 0)
+		return;
+
+	monster_done_dodge(self);
+
+	/*
+	if (self->monsterinfo.active_move == &gunner_move_jump ||
+		self->monsterinfo.active_move == &gunner_move_jump2)
+		return;
+	*/
+
+	if (level.time < self->pain_debounce_time)
+		return;
+
+	self->pain_debounce_time = level.time + 3_sec;
+
+	if (brandom())
+		gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+	else
+		gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+
+	if (!M_ShouldReactToPain(self, mod))
+		return; // no pain anims in nightmare
+
+	/*
+	if (damage <= 10)
+		M_SetAnimation(self, &gunner_move_pain3);
+	else if (damage <= 25)
+		M_SetAnimation(self, &gunner_move_pain2);
+	else
+		M_SetAnimation(self, &gunner_move_pain1);
+	*/
+
+	self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
+
+	// PMM - clear duck flag
+	if (self->monsterinfo.aiflags & AI_DUCKED)
+		monster_duck_up(self);
+}
+
 /*
 ===========
 PutClientInServer
@@ -2057,6 +2110,9 @@ void PutClientInServer(edict_t *ent)
 
 	char social_id[MAX_INFO_VALUE];
 	Q_strlcpy(social_id, ent->client->pers.social_id, sizeof(social_id));
+
+	// adnan
+	gi.Com_Print("==== Initializing POSSESSION ====\n");
 
 	// deathmatch wipes most client data every spawn
 	if (deathmatch->integer)
@@ -2266,6 +2322,17 @@ void PutClientInServer(edict_t *ent)
 
 	if (was_waiting_for_respawn)
 		G_PostRespawn(ent);
+
+	// adnan - try to bring in properties of a monster here
+	sound_death = gi.soundindex("gunner/death1.wav");
+	sound_pain = gi.soundindex("gunner/gunpain2.wav");
+	sound_pain2 = gi.soundindex("gunner/gunpain1.wav");
+	sound_idle = gi.soundindex("gunner/gunidle1.wav");
+	sound_open = gi.soundindex("gunner/gunatck1.wav");
+	sound_search = gi.soundindex("gunner/gunsrch1.wav");
+	sound_sight = gi.soundindex("gunner/sight1.wav");
+	ent->pain = p_gunner_pain;
+	
 }
 
 /*
